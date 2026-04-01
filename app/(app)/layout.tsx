@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { Sidebar } from "@/components/shared/sidebar";
+import { TopNavbar } from "@/components/shared/top-navbar";
 
 export default async function AppLayout({
   children,
@@ -20,8 +20,8 @@ export default async function AppLayout({
   });
 
   return (
-    <div className="min-h-screen">
-      <Sidebar
+    <div className="min-h-screen bg-[#F4F7F9]">
+      <TopNavbar
         user={{
           name: session.user.name,
           email: session.user.email,
@@ -30,8 +30,8 @@ export default async function AppLayout({
           departmentName: dbUser?.department?.name ?? null,
         }}
       />
-      <main className="lg:pl-64 pt-14 lg:pt-0 pb-16 lg:pb-0">
-        <div className="p-4 md:p-6 lg:p-8">{children}</div>
+      <main className="pt-14">
+        <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">{children}</div>
       </main>
     </div>
   );
