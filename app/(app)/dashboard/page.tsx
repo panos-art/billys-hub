@@ -40,7 +40,7 @@ export default async function DashboardPage() {
   await ensureBirthdayLeaveBalance(userId, currentYear);
 
   // Fetch data in parallel
-  const [leaveBalances, pendingRequests, upcomingAbsences, recentAnnouncements, upcomingBirthdays] =
+  const [leaveBalances, pendingRequests, upcomingAbsences, recentAnnouncements, allBirthdayUsers] =
     await Promise.all([
       // Leave balances
       prisma.leaveBalance.findMany({
@@ -95,28 +95,27 @@ export default async function DashboardPage() {
         },
       }),
 
-      // Upcoming birthdays (next 30 days)
-      prisma.$queryRaw<Array<{ id: string; name: string | null; image: string | null; birthday: Date }>>`
-        SELECT id, name, image, birthday
-        FROM users
-        WHERE birthday IS NOT NULL AND is_active = true
-        AND (
-          (EXTRACT(MONTH FROM birthday) * 100 + EXTRACT(DAY FROM birthday))
-          BETWEEN
-          (EXTRACT(MONTH FROM CURRENT_DATE) * 100 + EXTRACT(DAY FROM CURRENT_DATE))
-          AND
-          (EXTRACT(MONTH FROM (CURRENT_DATE + INTERVAL '30 days')) * 100 + EXTRACT(DAY FROM (CURRENT_DATE + INTERVAL '30 days')))
-          OR
-          (EXTRACT(MONTH FROM CURRENT_DATE) > EXTRACT(MONTH FROM (CURRENT_DATE + INTERVAL '30 days'))
-           AND (
-             (EXTRACT(MONTH FROM birthday) * 100 + EXTRACT(DAY FROM birthday)) >= (EXTRACT(MONTH FROM CURRENT_DATE) * 100 + EXTRACT(DAY FROM CURRENT_DATE))
-             OR (EXTRACT(MONTH FROM birthday) * 100 + EXTRACT(DAY FROM birthday)) <= (EXTRACT(MONTH FROM (CURRENT_DATE + INTERVAL '30 days')) * 100 + EXTRACT(DAY FROM (CURRENT_DATE + INTERVAL '30 days')))
-           ))
-        )
-        ORDER BY EXTRACT(MONTH FROM birthday), EXTRACT(DAY FROM birthday)
-        LIMIT 10
-      `,
+      // Upcoming birthdays — fetch all with birthdays, filter in JS
+      prisma.user.findMany({
+        where: { birthday: { not: null }, isActive: true },
+        select: { id: true, name: true, image: true, birthday: true },
+      }),
     ]);
+
+  // Filter birthdays to next 30 days
+  const filteredBirthdays = allBirthdayUsers.filter((u) => {
+    if (!u.birthday) return false;
+    const bday = new Date(u.birthday);
+    const todayMD = now.getMonth() * 100 + now.getDate();
+    const bdayMD = bday.getMonth() * 100 + bday.getDate();
+    const future = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const futureMD = future.getMonth() * 100 + future.getDate();
+    if (now.getMonth() <= future.getMonth()) {
+      return bdayMD >= todayMD && bdayMD <= futureMD;
+    }
+    // Dec→Jan wrap
+    return bdayMD >= todayMD || bdayMD <= futureMD;
+  }).slice(0, 10);
 
   const firstName = session.user.name?.split(" ")[0] || "χρήστη";
 
@@ -342,7 +341,7 @@ export default async function DashboardPage() {
         </Card>
 
         {/* Upcoming Birthdays */}
-        {upcomingBirthdays.length > 0 && (
+        {filteredBirthdays.length > 0 && (
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
@@ -352,7 +351,7 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {upcomingBirthdays.map((person) => (
+                {filteredBirthdays.map((person) => (
                   <div key={person.id} className="flex items-center gap-3 p-2">
                     {person.image ? (
                       <img src={person.image} alt="" className="w-8 h-8 rounded-full" />
