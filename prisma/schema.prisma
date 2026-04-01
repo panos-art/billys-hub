@@ -1,0 +1,241 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  SUPER_ADMIN
+  HR_ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  role          Role      @default(EMPLOYEE)
+  jobTitle      String?
+  phone         String?
+  linkedin      String?
+  bio           String?   @db.VarChar(200)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  departmentId String?
+  department   Department? @relation("DepartmentMembers", fields: [departmentId], references: [id])
+
+  managedDepartment Department? @relation("DepartmentManager")
+
+  accounts      Account[]
+  sessions      Session[]
+  leaveBalances LeaveBalance[]
+  leaveRequests LeaveRequest[]  @relation("LeaveRequester")
+  approvedLeaves LeaveRequest[] @relation("LeaveApprover")
+
+  knowledgeArticles KnowledgeArticle[]
+  announcements     Announcement[]
+  announcementReads AnnouncementRead[]
+  auditLogs         AuditLog[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Department {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  managerId String? @unique
+  manager   User?   @relation("DepartmentManager", fields: [managerId], references: [id])
+
+  members User[] @relation("DepartmentMembers")
+
+  @@map("departments")
+}
+
+model LeaveType {
+  id               String  @id @default(cuid())
+  name             String
+  nameEn           String
+  defaultDays      Int
+  requiresApproval Boolean @default(true)
+  isActive         Boolean @default(true)
+
+  leaveBalances LeaveBalance[]
+  leaveRequests LeaveRequest[]
+
+  @@map("leave_types")
+}
+
+model LeaveBalance {
+  id        String @id @default(cuid())
+  year      Int
+  totalDays Int
+  usedDays  Int    @default(0)
+
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leaveTypeId String
+  leaveType   LeaveType @relation(fields: [leaveTypeId], references: [id])
+
+  @@unique([userId, leaveTypeId, year])
+  @@map("leave_balances")
+}
+
+model LeaveRequest {
+  id              String      @id @default(cuid())
+  startDate       DateTime
+  endDate         DateTime
+  workingDays     Int
+  status          LeaveStatus @default(PENDING)
+  note            String?     @db.Text
+  approverComment String?     @db.Text
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  userId       String
+  user         User      @relation("LeaveRequester", fields: [userId], references: [id], onDelete: Cascade)
+  leaveTypeId  String
+  leaveType    LeaveType @relation(fields: [leaveTypeId], references: [id])
+  approvedById String?
+  approvedBy   User?     @relation("LeaveApprover", fields: [approvedById], references: [id])
+
+  @@map("leave_requests")
+}
+
+model PublicHoliday {
+  id          String   @id @default(cuid())
+  name        String
+  date        DateTime
+  isRecurring Boolean  @default(false)
+  year        Int
+
+  @@unique([date])
+  @@map("public_holidays")
+}
+
+model KnowledgeCategory {
+  id       String @id @default(cuid())
+  name     String @unique
+  slug     String @unique
+  order    Int    @default(0)
+
+  articles KnowledgeArticle[]
+
+  @@map("knowledge_categories")
+}
+
+model KnowledgeArticle {
+  id        String   @id @default(cuid())
+  title     String
+  slug      String   @unique
+  content   String   @db.Text
+  published Boolean  @default(false)
+  featured  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  categoryId String
+  category   KnowledgeCategory @relation(fields: [categoryId], references: [id])
+  authorId   String
+  author     User              @relation(fields: [authorId], references: [id])
+
+  @@map("knowledge_articles")
+}
+
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String
+  body      String   @db.Text
+  isPinned  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
+
+  reads AnnouncementRead[]
+
+  @@map("announcements")
+}
+
+model AnnouncementRead {
+  id     String   @id @default(cuid())
+  readAt DateTime @default(now())
+
+  announcementId String
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, userId])
+  @@map("announcement_reads")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  target    String
+  metadata  String?  @db.Text
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
