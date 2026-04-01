@@ -10,7 +10,8 @@ function LoginContent() {
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const [loading, setLoading] = useState<string | null>(null);
 
-  const isDev = process.env.NODE_ENV === "development";
+  // TODO: Remove dev bypass once Google OAuth is fully configured
+  const isDev = true;
 
   async function handleDevLogin(email: string) {
     setLoading(email);

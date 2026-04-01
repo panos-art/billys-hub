@@ -5,39 +5,33 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "./prisma";
 import type { Role } from "@/app/generated/prisma/client";
 
-const isDev = process.env.NODE_ENV === "development";
+// TODO: Set back to process.env.NODE_ENV === "development" once Google OAuth is fully configured
+const isDev = true;
 
 const providers: any[] = [
   Google({
     clientId: process.env.GOOGLE_CLIENT_ID!,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
   }),
+  Credentials({
+    id: "dev-login",
+    name: "Dev Login",
+    credentials: {
+      email: { label: "Email", type: "text" },
+    },
+    async authorize(credentials) {
+      if (!credentials?.email) return null;
+      const email = credentials.email as string;
+
+      const user = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true, name: true, email: true, image: true },
+      });
+
+      return user;
+    },
+  }),
 ];
-
-// Dev-only credentials provider for testing without Google OAuth
-if (isDev) {
-  providers.push(
-    Credentials({
-      id: "dev-login",
-      name: "Dev Login",
-      credentials: {
-        email: { label: "Email", type: "text" },
-      },
-      async authorize(credentials) {
-        if (!credentials?.email) return null;
-        const email = credentials.email as string;
-
-        // Only allow existing seeded users
-        const user = await prisma.user.findUnique({
-          where: { email },
-          select: { id: true, name: true, email: true, image: true },
-        });
-
-        return user;
-      },
-    })
-  );
-}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: PrismaAdapter(prisma),
