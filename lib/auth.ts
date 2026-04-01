@@ -55,7 +55,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (account?.provider === "dev-login") return true;
 
       const email = user.email;
-      if (!email || !email.endsWith("@billys.gr")) {
+      const allowedDomains = ["@billys.gr", "@billys.io"];
+      if (!email || !allowedDomains.some(d => email.endsWith(d))) {
         return false;
       }
       return true;
