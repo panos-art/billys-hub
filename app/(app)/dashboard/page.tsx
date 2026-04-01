@@ -230,14 +230,12 @@ export default async function DashboardPage() {
                 {tile.items && (
                   <div className="mt-2 space-y-1">
                     {tile.items.map((item) => (
-                      <Link
+                      <span
                         key={item.href}
-                        href={item.href}
-                        onClick={(e) => e.stopPropagation()}
-                        className="block text-xs text-gray-400 hover:text-[#00B1C9] transition-colors"
+                        className="block text-xs text-gray-400"
                       >
                         {item.label}
-                      </Link>
+                      </span>
                     ))}
                   </div>
                 )}
