@@ -1,33 +1,57 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { KPIGrid } from "@/components/marketing/kpi-card";
+import { ChannelTable } from "@/components/marketing/channel-table";
+import { CampaignTable } from "@/components/marketing/campaign-table";
+import { PipelineFunnel } from "@/components/marketing/pipeline-funnel";
+import { SpendVsLeadsChart, CPLTrendChart, SpendDistributionChart } from "@/components/marketing/trend-charts";
+import {
+  getKPIs,
+  getChannelData,
+  getCampaignData,
+  getPipelineData,
+  getWeeklyTrends,
+} from "@/lib/marketing/mock-data";
 
 export default function AdsPage() {
+  const kpis = getKPIs();
+  const channels = getChannelData();
+  const campaigns = getCampaignData();
+  const pipeline = getPipelineData();
+  const trends = getWeeklyTrends();
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard Διαφημίσεων</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Παρακολούθηση διαφημιστικής δαπάνης και απόδοσης
-        </p>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard Διαφημίσεων</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Απόδοση καμπανιών, leads & pipeline
+          </p>
+        </div>
+        <Badge variant="warning" className="text-xs">Mock Data</Badge>
       </div>
 
-      <Card className="border-dashed border-2 border-gray-200">
-        <CardContent className="py-16 text-center">
-          <BarChart3 className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-500 mb-2">
-            Σύντομα Διαθέσιμο
-          </h3>
-          <p className="text-sm text-gray-400 max-w-md mx-auto">
-            Το dashboard διαφημίσεων θα εμφανίζει δεδομένα από Meta Ads, Google Ads
-            και TikTok Ads. Συνδέστε τους λογαριασμούς σας για να ξεκινήσετε.
-          </p>
-          <div className="flex items-center justify-center gap-4 mt-6">
-            <div className="px-4 py-2 rounded-lg bg-gray-100 text-sm text-gray-400">Meta Ads</div>
-            <div className="px-4 py-2 rounded-lg bg-gray-100 text-sm text-gray-400">Google Ads</div>
-            <div className="px-4 py-2 rounded-lg bg-gray-100 text-sm text-gray-400">TikTok Ads</div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* KPI Cards */}
+      <KPIGrid kpis={kpis} />
+
+      {/* Channel Performance */}
+      <ChannelTable data={channels} />
+
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <SpendVsLeadsChart data={trends} />
+        <CPLTrendChart data={trends} />
+      </div>
+
+      {/* Spend Distribution + Pipeline */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <SpendDistributionChart data={channels} />
+        <PipelineFunnel data={pipeline} />
+      </div>
+
+      {/* Campaigns */}
+      <CampaignTable data={campaigns} />
     </div>
   );
 }
