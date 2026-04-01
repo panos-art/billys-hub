@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
       phone: true,
       linkedin: true,
       bio: true,
+      birthday: true,
       department: { select: { id: true, name: true } },
     },
     orderBy: { name: "asc" },

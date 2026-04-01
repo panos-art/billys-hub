@@ -31,6 +31,7 @@ interface Employee {
   phone: string | null;
   linkedin: string | null;
   bio: string | null;
+  birthday: string | null;
   department: { id: string; name: string } | null;
 }
 
@@ -51,6 +52,7 @@ export default function DirectoryPage() {
     phone: "",
     linkedin: "",
     bio: "",
+    birthday: "",
   });
   const [saving, setSaving] = useState(false);
 
@@ -101,6 +103,7 @@ export default function DirectoryPage() {
       phone: emp.phone || "",
       linkedin: emp.linkedin || "",
       bio: emp.bio || "",
+      birthday: emp.birthday ? emp.birthday.substring(0, 10) : "",
     });
   }
 
@@ -302,6 +305,16 @@ export default function DirectoryPage() {
               <p className="text-xs text-gray-400 text-right">
                 {editForm.bio.length}/200
               </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Ημερομηνία Γέννησης</Label>
+              <Input
+                type="date"
+                value={editForm.birthday}
+                onChange={(e) =>
+                  setEditForm({ ...editForm, birthday: e.target.value })
+                }
+              />
             </div>
           </div>
           <DialogFooter>

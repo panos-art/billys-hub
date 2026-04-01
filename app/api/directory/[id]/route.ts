@@ -24,7 +24,7 @@ export async function PATCH(
   }
 
   const body = await request.json();
-  const { jobTitle, phone, linkedin, bio } = body;
+  const { jobTitle, phone, linkedin, bio, birthday } = body;
 
   const updated = await prisma.user.update({
     where: { id },
@@ -33,6 +33,7 @@ export async function PATCH(
       ...(phone !== undefined && { phone }),
       ...(linkedin !== undefined && { linkedin }),
       ...(bio !== undefined && { bio: bio?.substring(0, 200) }),
+      ...(birthday !== undefined && { birthday: birthday ? new Date(birthday) : null }),
     },
     select: {
       id: true,
@@ -43,6 +44,7 @@ export async function PATCH(
       phone: true,
       linkedin: true,
       bio: true,
+      birthday: true,
     },
   });
 

@@ -31,6 +31,7 @@ model User {
   phone         String?
   linkedin      String?
   bio           String?   @db.VarChar(200)
+  birthday      DateTime?
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

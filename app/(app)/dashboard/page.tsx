@@ -14,7 +14,10 @@ import {
   Clock,
   AlertCircle,
 } from "lucide-react";
-import { differenceInDays } from "date-fns";
+import { differenceInDays, format } from "date-fns";
+import { el } from "date-fns/locale";
+import { ensureBirthdayLeaveBalance } from "@/lib/birthday-leave";
+import { Cake } from "lucide-react";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -33,8 +36,11 @@ export default async function DashboardPage() {
     ? differenceInDays(now, new Date(dbUser.createdAt)) < 30
     : false;
 
+  // Ensure birthday leave balance exists
+  await ensureBirthdayLeaveBalance(userId, currentYear);
+
   // Fetch data in parallel
-  const [leaveBalances, pendingRequests, upcomingAbsences, recentAnnouncements] =
+  const [leaveBalances, pendingRequests, upcomingAbsences, recentAnnouncements, upcomingBirthdays] =
     await Promise.all([
       // Leave balances
       prisma.leaveBalance.findMany({
@@ -88,6 +94,28 @@ export default async function DashboardPage() {
           reads: { where: { userId }, select: { id: true } },
         },
       }),
+
+      // Upcoming birthdays (next 30 days)
+      prisma.$queryRaw<Array<{ id: string; name: string | null; image: string | null; birthday: Date }>>`
+        SELECT id, name, image, birthday
+        FROM users
+        WHERE birthday IS NOT NULL AND is_active = true
+        AND (
+          (EXTRACT(MONTH FROM birthday) * 100 + EXTRACT(DAY FROM birthday))
+          BETWEEN
+          (EXTRACT(MONTH FROM CURRENT_DATE) * 100 + EXTRACT(DAY FROM CURRENT_DATE))
+          AND
+          (EXTRACT(MONTH FROM (CURRENT_DATE + INTERVAL '30 days')) * 100 + EXTRACT(DAY FROM (CURRENT_DATE + INTERVAL '30 days')))
+          OR
+          (EXTRACT(MONTH FROM CURRENT_DATE) > EXTRACT(MONTH FROM (CURRENT_DATE + INTERVAL '30 days'))
+           AND (
+             (EXTRACT(MONTH FROM birthday) * 100 + EXTRACT(DAY FROM birthday)) >= (EXTRACT(MONTH FROM CURRENT_DATE) * 100 + EXTRACT(DAY FROM CURRENT_DATE))
+             OR (EXTRACT(MONTH FROM birthday) * 100 + EXTRACT(DAY FROM birthday)) <= (EXTRACT(MONTH FROM (CURRENT_DATE + INTERVAL '30 days')) * 100 + EXTRACT(DAY FROM (CURRENT_DATE + INTERVAL '30 days')))
+           ))
+        )
+        ORDER BY EXTRACT(MONTH FROM birthday), EXTRACT(DAY FROM birthday)
+        LIMIT 10
+      `,
     ]);
 
   const firstName = session.user.name?.split(" ")[0] || "χρήστη";
@@ -312,6 +340,40 @@ export default async function DashboardPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Upcoming Birthdays */}
+        {upcomingBirthdays.length > 0 && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Cake className="h-4 w-4 text-[#F39257]" />
+                Επερχόμενα Γενέθλια
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {upcomingBirthdays.map((person) => (
+                  <div key={person.id} className="flex items-center gap-3 p-2">
+                    {person.image ? (
+                      <img src={person.image} alt="" className="w-8 h-8 rounded-full" />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-[#1C4E89] flex items-center justify-center text-white text-xs font-medium">
+                        {person.name?.charAt(0)}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{person.name}</p>
+                      <p className="text-xs text-gray-400">
+                        {format(new Date(2000, new Date(person.birthday).getMonth(), new Date(person.birthday).getDate()), "d MMMM", { locale: el })}
+                      </p>
+                    </div>
+                    <span className="text-lg">🎂</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Onboarding Checklist */}
         {isNewUser && (

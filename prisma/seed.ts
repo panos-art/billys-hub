@@ -30,6 +30,12 @@ async function main() {
     create: { name: "Operations" },
   });
 
+  const marketing = await prisma.department.upsert({
+    where: { name: "Marketing" },
+    update: {},
+    create: { name: "Marketing" },
+  });
+
   console.log("✓ Departments created");
 
   // --- Users ---
@@ -68,6 +74,7 @@ async function main() {
     { name: "Άδεια Γάμου", nameEn: "Marriage Leave", defaultDays: 5 },
     { name: "Πένθιμη Άδεια", nameEn: "Bereavement Leave", defaultDays: 3 },
     { name: "Εκπαιδευτική Άδεια", nameEn: "Study Leave", defaultDays: 5 },
+    { name: "Άδεια Γενεθλίων", nameEn: "Birthday Leave", defaultDays: 1 },
   ];
 
   const createdLeaveTypes = [];
@@ -78,7 +85,7 @@ async function main() {
       create: {
         id: lt.nameEn.toLowerCase().replace(/\s+/g, "-"),
         ...lt,
-        requiresApproval: true,
+        requiresApproval: lt.nameEn !== "Birthday Leave",
         isActive: true,
       },
     });
