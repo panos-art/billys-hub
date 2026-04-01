@@ -58,7 +58,11 @@ export default async function DashboardPage() {
     : false;
   const departmentName = dbUser?.department?.name ?? null;
 
-  await ensureBirthdayLeaveBalance(userId, currentYear);
+  try {
+    await ensureBirthdayLeaveBalance(userId, currentYear);
+  } catch (e) {
+    // Birthday leave type may not exist yet, skip silently
+  }
 
   const [leaveBalances, pendingRequests, upcomingAbsences, recentAnnouncements, allBirthdayUsers] =
     await Promise.all([
