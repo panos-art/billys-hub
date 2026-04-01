@@ -363,7 +363,7 @@ export default async function DashboardPage() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{person.name}</p>
                       <p className="text-xs text-gray-400">
-                        {format(new Date(2000, new Date(person.birthday).getMonth(), new Date(person.birthday).getDate()), "d MMMM", { locale: el })}
+                        {person.birthday && format(new Date(2000, new Date(person.birthday).getMonth(), new Date(person.birthday).getDate()), "d MMMM", { locale: el })}
                       </p>
                     </div>
                     <span className="text-lg">🎂</span>
