@@ -7,7 +7,7 @@ import type { Role } from "@/app/generated/prisma/client";
 
 const isDev = process.env.NODE_ENV === "development";
 
-const providers = [
+const providers: any[] = [
   Google({
     clientId: process.env.GOOGLE_CLIENT_ID!,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
